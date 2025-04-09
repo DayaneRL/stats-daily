@@ -18,8 +18,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 const Register = () => {
   const [data, setData] = useState({});
-  const { register, loadingAuth, user } = useContext(AuthContext);
-  let navigate = useNavigate();
+  const { register } = useContext(AuthContext);
 
   function registerUser(e){
     e.preventDefault();

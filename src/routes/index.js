@@ -14,8 +14,7 @@ const Page500 = React.lazy(() => import('../views/pages/page500/Page500'))
 //views
 const Tracks = React.lazy(() => import('../views/tracks/Tracks'))
 const Profile = React.lazy(() => import('../views/pages/profile/Profile'))
-
-// import Login from '../views/pages/login/Login';
+const Settings = React.lazy(() => import('../views/pages/settings/Settings'))
 
 export default function Routes(){
     return(
@@ -32,6 +31,7 @@ export default function Routes(){
 
             <Route exact path="#/tracks" name="Tracks" element={<Tracks />} />
             <Route exact path="#/profile" name="Profile" element={<Profile />} />
+            <Route exact path="#/settings" name="Settings" element={<Settings />} />
             
             <Route path="*" name="Home" element={<DefaultLayout />} />
         </RouterRouter>

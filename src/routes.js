@@ -2,21 +2,23 @@ import React from 'react'
 
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard.js'))
 const Tracks = React.lazy(() => import('./views/tracks/Tracks.js'))
+const CreateTracks = React.lazy(() => import('./views/tracks/Create/Create.js'))
 const Artists = React.lazy(() => import('./views/artists/Artists.js'))
+const CreateArtists = React.lazy(() => import('./views/artists/Create.js'))
 const Profile = React.lazy(() => import('./views/pages/profile/Profile'))
+const Settings = React.lazy(() => import('./views/pages/settings/Settings'))
 
-const Charts = React.lazy(() => import('./views/charts/Charts'))
-const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
-  { path: '/tracks', name: 'Tracks', element: Tracks },
-  { path: '/artists', name: 'Artists', element: Artists },
+  { path: '/tracks/list', name: 'List Tracks', element: Tracks },
+  { path: '/tracks/create', name: 'Create Track', element: CreateTracks },
+  { path: '/artists/list', name: 'List Artists', element: Artists },
+  { path: '/artists/create', name: 'Create Artist', element: CreateArtists },
   { path: '/profile', name: 'Profile', element: Profile },
+  { path: '/settings', name: 'Settings', element: Settings },
 
-  { path: '/charts', name: 'Charts', element: Charts },
-  { path: '/widgets', name: 'Widgets', element: Widgets },
 ]
 
 export default routes

@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
 import {
   CAvatar,
-  CBadge,
   CDropdown,
   CDropdownDivider,
   CDropdownHeader,
@@ -10,21 +9,13 @@ import {
   CDropdownToggle,
 } from '@coreui/react'
 import {
-  cilBell,
-  cilCreditCard,
-  cilCommentSquare,
-  cilEnvelopeOpen,
-  cilFile,
-  cilLockLocked,
   cilSettings,
-  cilTask,
   cilUser,
   cilAccountLogout,
   cilUserPlus,
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
-import avatar1 from './../../assets/images/avatars/1.jpg'
 import userDefault from './../../assets/images/avatars/profile.png'
 import { AuthContext } from '../../contexts/auth'
 
@@ -38,15 +29,13 @@ const AppHeaderDropdown = () => {
   }
 
   useEffect(()=>{
-    if(user?.photoURL){
-      setAvatar(user.photoURL)
-    }
-  },[user?.photoURL]);
+    setAvatar(user?.photoURL ?? userDefault)
+  },[user]);
 
   return (
     <CDropdown variant="nav-item">
       <div className='d-flex align-items-center'>
-        <span><b>{user.displayName}</b></span>
+        <span><b>{user?.displayName}</b></span>
       <CDropdownToggle placement="bottom-end" className="py-0 pe-0" caret={false}>
         <CAvatar src={avatar} size="md" />
       </CDropdownToggle>
@@ -58,7 +47,7 @@ const AppHeaderDropdown = () => {
               <CIcon icon={cilUser} className="me-2" />
               Profile
             </CDropdownItem>
-            <CDropdownItem href="#" disabled>
+            <CDropdownItem href="#/settings">
               <CIcon icon={cilSettings} className="me-2" />
               Settings
             </CDropdownItem>

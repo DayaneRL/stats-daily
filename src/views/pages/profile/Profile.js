@@ -1,15 +1,20 @@
 import { collection, getDocs } from "firebase/firestore";
 import { useContext, useEffect, useState } from "react";
 import db from "../../../services/connection";
-import { CAvatar, CButton, CCard, CCardBody, CCardHeader, CCol, CFormInput, CFormLabel, CInputGroup, CInputGroupText, CPopover, CRow } from "@coreui/react";
+import { CAlert, CAvatar, CButton, CCard, CCardBody, CCardHeader, CCol, CFormInput, CFormLabel, CInputGroup, CInputGroupText, CPopover, CRow, CTooltip } from "@coreui/react";
 import userDefault from './../../../assets/images/avatars/profile.png'
 import { AuthContext } from "../../../contexts/auth";
 import RenderImages from "./components/RenderImages";
+import CIcon from "@coreui/icons-react";
+import { cilWarning } from "@coreui/icons";
 
 const Profile = () => {
     const [avatar, setAvatar] = useState(userDefault);
     const [image, setImage] = useState();
-    const {user, updateUser} = useContext(AuthContext);
+    const [openPopover, setOpenPopover] = useState(false);
+    const togglePopover = () => setOpenPopover(!openPopover);
+
+    const {user, updateUser, uploadUserPhoto, verifyEmail} = useContext(AuthContext);
     const [userData, setUserData] = useState([]);
 
     useEffect(()=>{
@@ -30,14 +35,21 @@ const Profile = () => {
     }
 
     const updateProfile = () => {
-        updateUser(userData.displayName, userData.photoURL, userData.email);
+        updateUser(userData.displayName, userData.photoURL);
+        if(image){
+            uploadUserPhoto(image);
+        }
     }
 
     const changeImageLocal = (image) => {
-        console.log('select')
+        togglePopover();
         setAvatar(image);
         setUserData({...userData, photoURL: image});
-    }    
+    }
+
+    const sendVerification = () => {
+        verifyEmail();
+    }
 
     return (
         <div>
@@ -51,16 +63,16 @@ const Profile = () => {
                             <div className="d-flex flex-column ms-2">
                                 <CFormLabel>Profile image</CFormLabel>
                                 <div>
-                                    <CButton as={CFormLabel} size="sm" color="secondary mt-2">
+                                    <CButton as={CFormLabel} size="sm" color="secondary m-0">
                                         Choose file
                                         <CFormInput type='file' onChange={onChange} hidden accept='image/*' />
                                     </CButton>
                                     <CPopover
                                         content={<RenderImages selectAvatar={changeImageLocal}/>}
                                         placement="bottom"
-                                        trigger="click"
+                                        visible={openPopover}
                                     >
-                                        <CButton color="primary ms-2" size="sm">
+                                        <CButton color="primary ms-2" size="sm" onClickCapture={togglePopover}>
                                             Change image
                                         </CButton>
                                     </CPopover>
@@ -78,13 +90,33 @@ const Profile = () => {
                         />
                     </CCol>
                     <CCol md={6} className="mt-3">
-                        <CFormLabel>E-mail</CFormLabel>
-                        <CFormInput placeholder="Email" disabled readOnly
+                        <CFormLabel>
+                            E-mail
+                            {!userData?.emailVerified && (
+                                <CTooltip content="verify your account">
+                                    <CIcon icon={cilWarning} className="ms-2 text-warning"/>
+                                </CTooltip>
+                            )}
+                        </CFormLabel>
+                        <CFormInput placeholder="Email" 
+                            disabled 
+                            readOnly 
                             value={userData.email}
                             onChange={(e)=>setUserData({...userData, email: e.target.value})}
                         />
                     </CCol>
                 </CRow>
+                {!userData?.emailVerified && (
+                    <div className="mt-3">
+                        <CAlert color="warning py-2">
+                            You didn't verified your account yet! Please {' '}
+                            <span className="text-primary text-decoration-underline" onClick={sendVerification} style={{cursor:'pointer'}}>
+                                click here
+                            </span>
+                            {' '}to verify.
+                        </CAlert>
+                    </div>
+                )}
                 <div className="text-end mt-3">
                     <CButton color="primary" onClick={updateProfile}>Save</CButton>
                 </div>

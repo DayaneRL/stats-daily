@@ -1,16 +1,17 @@
 import {createContext, useState, useEffect } from "react";
 // import firebase from '../services/connection';
 // import { toast } from "react-toastify";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getAuth, signOut, sendPasswordResetEmail, updateProfile, updateEmail } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getAuth, signOut, sendPasswordResetEmail, updateProfile, updateEmail, sendEmailVerification, verifyBeforeUpdateEmail } from "firebase/auth";
 import { collection, addDoc, getDocs, updateDoc, query, where, collectionGroup, getDoc, setDoc, doc } from "firebase/firestore";  
 import db from "../services/connection";
 import { toast } from "sonner";
 import { redirect } from "react-router-dom";
+import { getStorage, ref, uploadBytes } from "firebase/storage";
 
 export const AuthContext = createContext({});
 
 function AuthProvider({children}){
-    const usersRef = collection(db, 'users');
+    // const usersRef = collection(db, 'users');
     const auth = getAuth();
 
     const [user, setUser] = useState(null);
@@ -18,7 +19,6 @@ function AuthProvider({children}){
     const [loading, setLoading] = useState(true);
 
     useEffect(()=>{
-
         function loadStorage(){
             const storageUser = localStorage.getItem('userData');
             if(storageUser){
@@ -27,7 +27,6 @@ function AuthProvider({children}){
             setLoading(false);
         }
         loadStorage();
-
     },[]);
 
     async function login(email, password){
@@ -36,19 +35,15 @@ function AuthProvider({children}){
         await signInWithEmailAndPassword(auth, email, password)
         .then(async (value)=>{
            
-            let uid = value.user.uid;
+            // let uid = value.user.uid;
             let userProfile = auth.currentUser;
             
-            // const userProfile = await getDoc(doc(db, "users", uid))
-            console.log(userProfile)
-            
             if (userProfile) {
-                console.log(userProfile)
                 setUser(userProfile);
                 storageUser(userProfile);
                 setLoadingAuth(false);
             }
-            toast.success('Welcome '+userProfile.displayName);
+            toast.success(`Welcome ${userProfile?.displayName??''}!`);
         })
         .catch((error)=>{
             console.log(error, error.code);
@@ -66,13 +61,7 @@ function AuthProvider({children}){
         await createUserWithEmailAndPassword(auth, email, password)
         .then(async (userCredential)=>{
             let uid = userCredential.user.uid;
-            console.log(uid);
-
-            // const docRef = await setDoc(doc(db, `users/${uid}`), {
-            //     username: username,
-            //     email: email,
-            //     photoURL: '1.jpg',
-            // })
+            
             updateProfile(userCredential.user, {
                 displayName: name, photoURL: '/src/assets/images/avatars/1.jpg'
             })
@@ -81,9 +70,7 @@ function AuthProvider({children}){
                 setUser(auth.currentUser);
                 storageUser(auth.currentUser);
                 setLoadingAuth(false);
-                redirect('/')
-                
-                console.log('redirect');
+                redirect('/');
                 toast.success('Welcome '+name);
             })
             // console.log("Document written with ID: ", docRef.id);
@@ -96,19 +83,26 @@ function AuthProvider({children}){
     }
 
     function storageUser(data){
-        localStorage.setItem('userData', JSON.stringify(data));
+        let userData = {
+            uid: data.uid,
+            email: data.email,
+            emailVerified: data.emailVerified,
+            displayName: data.displayName,
+            photoURL: data.photoURL,
+            lastLoginAt: data.lastLoginAt,
+        };
+        localStorage.setItem('userData', JSON.stringify(userData));
     }
 
     async function logout(){
         setLoadingAuth(true);
         await signOut(auth);
         localStorage.removeItem('userData');
-        // toast.info('Usuário deslogado');
         setUser(null);
         setLoadingAuth(false);
     }
 
-    const resetpassword = async (email) => {
+    const resetPassword = async (email) => {
         sendPasswordResetEmail(auth, email)
         .then(() => {
             toast.success('Password reset email sent!');
@@ -120,7 +114,17 @@ function AuthProvider({children}){
         });
     }
 
-    const updateUser = (name, photoURL, email) => {
+    const verifyEmail = () => {
+        sendEmailVerification(auth.currentUser)
+        .then(()=>{
+            toast.success('Verification email sent');
+        })
+        .catch(error=>{
+            toast.error(error.message);
+        })
+    }
+
+    const updateUser = (name, photoURL) => {
 
         if(name!==user.displayName || photoURL!==user.photoURL){
             updateProfile(auth.currentUser, {
@@ -129,23 +133,62 @@ function AuthProvider({children}){
             .then(()=>{
                 setUser(auth.currentUser);
                 storageUser(auth.currentUser);
+                toast.success('Profile updated successfully.');
             })
             .catch(error=>{
                 toast.error(error.message);
                 return;
             })
         }
+    }
 
-        if(email!==user.email){
-            //nao pode, precisa autenticar o email antes de trocar
-            // updateEmail(auth.currentUser, email)
-            // .catch(error=>{
-            //     toast.error(error.message);
-            //     return;
-            // })
-        }
+    const updateEmail = () => {
+        // verifyBeforeUpdateEmail(auth.currentUser, email)
+        // .then(()=>{
+        //  toast.success('Please verify the new email to complete action'))
+        //  logout()
+        // }
+        // .catch(error=>{
+        //     toast.error(error.message);
+        //     return;
+        // })
+    }
 
-        toast.success('Profile updated successfully.');
+    async function uploadUserPhoto(image){   
+        
+        const formData = new FormData();
+        formData.append('image', image, image?.name);
+
+        const key = import.meta.env.VITE_imgbb_key;
+        await fetch('https://api.imgbb.com/1/upload?key='+key, {
+          method: 'POST',  
+          body: formData,
+        })
+        .then(response => response.json())
+        .then(({data}) => {
+            console.log('Uploaded a blob or file!');
+            console.log(data);
+
+            //update profile
+            updateProfile(auth.currentUser, {
+                displayName: auth.currentUser.displayName, photoURL: data?.url
+            })
+            .then(()=>{
+                setUser(auth.currentUser);
+                storageUser(auth.currentUser);
+            })
+        });
+
+    }
+
+    const changeUserPassword = (newPassword) => {
+        updatePassword(auth.currentUser, newPassword)
+        .then(() => {
+            // Update successful.
+        }).catch((error) => {
+        // An error ocurred
+        // ...
+        });
     }
 
     //!! = converter para booleano, se houver valor é true, se vazio é false
@@ -161,8 +204,10 @@ function AuthProvider({children}){
                 loadingAuth, 
                 setUser, 
                 storageUser, 
-                resetpassword,
+                resetPassword,
                 updateUser,
+                uploadUserPhoto,
+                verifyEmail
             }}>
             {children}
         </AuthContext.Provider>

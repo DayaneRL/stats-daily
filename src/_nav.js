@@ -1,11 +1,9 @@
 import React from 'react'
 import CIcon from '@coreui/icons-react'
 import {
-  cilCalculator,
-  cilChartPie,
-  cilCursor,
-  cilPuzzle,
-  cilSpeedometer,
+  cilHome,
+  cilMusicNote,
+  cilVoiceOverRecord,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
@@ -15,57 +13,50 @@ const _nav = [
     component: CNavItem,
     name: 'Dashboard',
     to: '/dashboard',
-    icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    icon: <CIcon icon={cilHome} customClassName="nav-icon" />,
     badge: {
       color: 'info',
     },
   },
   {
     component: CNavTitle,
-    name: 'Cadastros',
+    name: 'Base',
   },
   {
     component: CNavGroup,
-    name: 'Músicas',
+    name: 'Tracks',
     to: '/tracks',
-    icon: <CIcon icon={cilPuzzle} customClassName="nav-icon" />,
+    icon: <CIcon icon={cilMusicNote} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
-        name: 'Cadastrar Música',
-        to: '/tracks',
+        name: 'Create Track',
+        to: '/tracks/create',
+      },
+      {
+        component: CNavItem,
+        name: 'List Tracks',
+        to: '/tracks/list',
       },
     ],
   },
   {
     component: CNavGroup,
-    name: 'Artista',
+    name: 'Artist',
     to: '/artists',
-    icon: <CIcon icon={cilCursor} customClassName="nav-icon" />,
+    icon: <CIcon icon={cilVoiceOverRecord} customClassName="nav-icon" />,
     items: [
       {
         component: CNavItem,
-        name: 'Cadastrar Artista',
-        to: '/artists',
+        name: 'Create Artist',
+        to: '/artists/create',
       },
-     
+      {
+        component: CNavItem,
+        name: 'Track List',
+        to: '/artists/list',
+      },
     ],
-  },
-  {
-    component: CNavItem,
-    name: 'Charts',
-    to: '/charts',
-    icon: <CIcon icon={cilChartPie} customClassName="nav-icon" />,
-  },
-  {
-    component: CNavItem,
-    name: 'Widgets',
-    to: '/widgets',
-    icon: <CIcon icon={cilCalculator} customClassName="nav-icon" />,
-    badge: {
-      color: 'info',
-      text: 'NEW',
-    },
   },
 ]
 

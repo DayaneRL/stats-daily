@@ -25,7 +25,7 @@ import { toast } from 'sonner'
 const Login = () => {
 
   const [data, setData] = useState({});
-  const {login, resetpassword, signed} = useContext(AuthContext);
+  const {login, resetPassword, signed} = useContext(AuthContext);
   const navigate = useNavigate();
   const [isOpenModal, setIsOpenModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -41,7 +41,7 @@ const Login = () => {
 
   async function forgotPassword(){
     if(resetEmail?.length){
-      resetpassword(resetEmail)
+      resetPassword(resetEmail)
       setIsOpenModal(false);
     }else{
       toast.warning('Please inform the email');
