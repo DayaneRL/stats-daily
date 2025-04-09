@@ -1,9 +1,11 @@
 import {createContext, useState, useEffect } from "react";
 // import firebase from '../services/connection';
 // import { toast } from "react-toastify";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getAuth, signOut } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, getAuth, signOut, sendPasswordResetEmail, updateProfile, updateEmail } from "firebase/auth";
 import { collection, addDoc, getDocs, updateDoc, query, where, collectionGroup, getDoc, setDoc, doc } from "firebase/firestore";  
 import db from "../services/connection";
+import { toast } from "sonner";
+import { redirect } from "react-router-dom";
 
 export const AuthContext = createContext({});
 
@@ -21,7 +23,6 @@ function AuthProvider({children}){
             const storageUser = localStorage.getItem('userData');
             if(storageUser){
                 setUser(JSON.parse(storageUser));
-                setLoading(false);
             }
             setLoading(false);
         }
@@ -36,65 +37,60 @@ function AuthProvider({children}){
         .then(async (value)=>{
            
             let uid = value.user.uid;
+            let userProfile = auth.currentUser;
             
-            const userProfile = await getDoc(doc(db, "users", uid))
-            console.log(userProfile)
+            // const userProfile = await getDoc(doc(db, "users", uid))
             console.log(userProfile)
             
-            if (userProfile?.exists()) {
+            if (userProfile) {
                 console.log(userProfile)
-                let data = {
-                    uid: uid,
-                    // nome: userProfile.data().nome,
-                    avatarUrl: userProfile.data().avatarUrl,
-                    email: value.user.email
-                }
-                
-                setUser(data);
-                storageUser(data);
+                setUser(userProfile);
+                storageUser(userProfile);
                 setLoadingAuth(false);
             }
-            // toast.success('Seja bem vindo(a) '+userProfile.data().nome);
+            toast.success('Welcome '+userProfile.displayName);
         })
         .catch((error)=>{
-            console.log(error);
-            if(error.code=='auth/user-not-found' ||error.code=='auth/wrong-password'){
-                // toast.warning('Email ou senha incorreta');
+            console.log(error, error.code);
+            if(error.code=='auth/invalid-credential'){
+                toast.error('Email or password invalid');
             }else{
-                // toast.error('Ops... algo deu errado');
+                toast.error('Something went worng');
             }
             setLoadingAuth(false);
         })
     }
 
-    async function register(username, email, password){
+    async function register(name, email, password){
         setLoadingAuth(true);
         await createUserWithEmailAndPassword(auth, email, password)
         .then(async (userCredential)=>{
             let uid = userCredential.user.uid;
+            console.log(uid);
 
-            const docRef = await setDoc(doc(db, `users/${uid}`), {
-                username: username,
-                email: email,
-                avatarUrl: '1.jpg',
+            // const docRef = await setDoc(doc(db, `users/${uid}`), {
+            //     username: username,
+            //     email: email,
+            //     photoURL: '1.jpg',
+            // })
+            updateProfile(userCredential.user, {
+                displayName: name, photoURL: '/src/assets/images/avatars/1.jpg'
             })
             .then(()=>{
-                let data = {
-                    uid: uid,
-                    email: email,
-                    username: username,
-                    avatarUrl: '1.jpg'
-                }
-                setUser(data);
-                storageUser(data);
+                
+                setUser(auth.currentUser);
+                storageUser(auth.currentUser);
                 setLoadingAuth(false);
-                // toast.success('Seja bem vindo(a) '+nome);
+                redirect('/')
+                
+                console.log('redirect');
+                toast.success('Welcome '+name);
             })
-            console.log("Document written with ID: ", docRef.id);
+            // console.log("Document written with ID: ", docRef.id);
         })
         .catch((error)=>{
             console.log(error);
-            // toast.error('Algo deu errado. Message: '+error.message);
+            toast.error('Something went wrong. Message: '+error.message);
             setLoadingAuth(false);
         })
     }
@@ -112,10 +108,62 @@ function AuthProvider({children}){
         setLoadingAuth(false);
     }
 
+    const resetpassword = async (email) => {
+        sendPasswordResetEmail(auth, email)
+        .then(() => {
+            toast.success('Password reset email sent!');
+        })
+        .catch((error) => {
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            toast.error(errorMessage);
+        });
+    }
+
+    const updateUser = (name, photoURL, email) => {
+
+        if(name!==user.displayName || photoURL!==user.photoURL){
+            updateProfile(auth.currentUser, {
+                displayName: name, photoURL: photoURL
+            })
+            .then(()=>{
+                setUser(auth.currentUser);
+                storageUser(auth.currentUser);
+            })
+            .catch(error=>{
+                toast.error(error.message);
+                return;
+            })
+        }
+
+        if(email!==user.email){
+            //nao pode, precisa autenticar o email antes de trocar
+            // updateEmail(auth.currentUser, email)
+            // .catch(error=>{
+            //     toast.error(error.message);
+            //     return;
+            // })
+        }
+
+        toast.success('Profile updated successfully.');
+    }
+
     //!! = converter para booleano, se houver valor é true, se vazio é false
     return(
         <AuthContext.Provider 
-            value={{signed: !!user,user,loading,register,logout,login,loadingAuth, setUser, storageUser}}>
+            value={{
+                signed: !!user,
+                user,
+                loading,
+                register,
+                logout,
+                login,
+                loadingAuth, 
+                setUser, 
+                storageUser, 
+                resetpassword,
+                updateUser,
+            }}>
             {children}
         </AuthContext.Provider>
     );

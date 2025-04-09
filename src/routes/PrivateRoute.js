@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import {Route, Navigate, Outlet} from 'react-router-dom';
 import {AuthContext} from '../contexts/auth';
 
-export const PrivateRoute = () => {
+export const PrivateRoute = ({children}) => {
     
     const {signed, loading} = useContext(AuthContext);
 
@@ -12,22 +12,5 @@ export const PrivateRoute = () => {
         )
     }
 
-    // if(!signed && isPrivate){//se tentar acessar rota sem logar
-    //     return <Navigate to="/"/>
-    // }
-
-    //se ta logado e tentou acessar tela nao privada
-    // if(signed && !isPrivate && 
-    //     rest.path!=='/categorias' && rest.path!=='/autores' && rest.path!=='/novoPost'){
-    //     return <Navigate to="/painel"/>
-    // }
-
-    // return(
-    //     <Route {...rest}
-    //         render={ props => (
-    //             <Component {...props}/>
-    //         )}
-    //     />
-    // )
-    return signed ? <Outlet /> : <Navigate to="/" />;
+    return signed ? children : <Navigate to="/" />;
 }

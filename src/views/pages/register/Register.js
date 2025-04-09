@@ -18,15 +18,13 @@ import { Link, useNavigate } from 'react-router-dom'
 
 const Register = () => {
   const [data, setData] = useState({});
-  const { cadastro, loadingAuth, user } = useContext(AuthContext);
+  const { register, loadingAuth, user } = useContext(AuthContext);
   let navigate = useNavigate();
 
-  function register(e){
-    console.log('aquir');
+  function registerUser(e){
     e.preventDefault();
-    if(data.username !== '' && data.email !=='' && data.password !== ''){
-      console.log('aquir2', data);
-      cadastro(data.username, data.email, data.password);
+    if(data.name !== '' && data.email !=='' && data.password !== ''){
+      register(data.name, data.email, data.password);
     }
   }
 
@@ -37,7 +35,7 @@ const Register = () => {
           <CCol md={9} lg={7} xl={6}>
             <CCard className="mx-4">
               <CCardBody className="p-4">
-                <CForm onSubmit={register}>
+                <CForm onSubmit={registerUser}>
                   <h1>Register</h1>
                   <p className="text-body-secondary">Create your account</p>
                   <CInputGroup className="mb-3">
@@ -45,9 +43,9 @@ const Register = () => {
                       <CIcon icon={cilUser} />
                     </CInputGroupText>
                     <CFormInput 
-                     placeholder="Username"
-                     value={data.username} 
-                     onChange={(e)=>setData({...data, username: e.target.value})}
+                     placeholder="Name"
+                     value={data.name} 
+                     onChange={(e)=>setData({...data, name: e.target.value})}
                     />
                   </CInputGroup>
                   <CInputGroup className="mb-3">
@@ -83,16 +81,19 @@ const Register = () => {
                   </CInputGroup>
                   <div className="d-grid">
                     <CButton color="success" type='submit'>Create Account</CButton>
-                    <Link to="/login" color="white" 
-                      className="mt-2 p-2 color-link border text-center text-decoration-none"
-                      >Login</Link>
+                    <Link to="/login" >
+                      <CButton color="white" 
+                        className="mt-2 p-2 color-link border w-100"
+                        >Login
+                      </CButton>
+                    </Link>
                   </div>
                 </CForm>
               </CCardBody>
             </CCard>
             <div className='text-center mt-2'>
               <Link to="/" color="white" className="px-0 color-link text-decoration-none">
-                <CIcon icon={cilHome} /> Ir para página principal
+                <CIcon icon={cilHome} /> Home page
               </Link>              
             </div>
           </CCol>

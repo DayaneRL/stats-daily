@@ -11,22 +11,40 @@ import {
   CFormInput,
   CInputGroup,
   CInputGroupText,
+  CModal,
+  CModalBody,
+  CModalHeader,
+  CModalTitle,
   CRow,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilLockLocked, cilUser } from '@coreui/icons'
+import { cilHome, cilLockLocked, cilUser } from '@coreui/icons'
 import { AuthContext } from '../../../contexts/auth'
+import { toast } from 'sonner'
 
 const Login = () => {
 
   const [data, setData] = useState({});
-  const {login, loadingAuth, signed} = useContext(AuthContext);
+  const {login, resetpassword, signed} = useContext(AuthContext);
   const navigate = useNavigate();
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
-  function handleLogin(e){
+  async function handleLogin(e){
     e.preventDefault();
-    if(data.email!=='' && data.password!==''){
-      login(data.email, data.password);
+    if(data.email && data.password){
+      await login(data.email, data.password);
+    }else{
+      toast.warning('Please insert email and password')
+    }
+  }
+
+  async function forgotPassword(){
+    if(resetEmail?.length){
+      resetpassword(resetEmail)
+      setIsOpenModal(false);
+    }else{
+      toast.warning('Please inform the email');
     }
   }
 
@@ -39,8 +57,8 @@ const Login = () => {
   return (
     <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
       <CContainer>
-        <CRow className="justify-content-center">
-          <CCol md={8}>
+        <div className="row justify-content-md-center">
+          <CCol  md="auto" className='justify-content-center'>
             <CCardGroup>
               <CCard className="p-4">
                 <CCardBody>
@@ -65,14 +83,21 @@ const Login = () => {
                       onChange={(e)=>setData({...data, password: e.target.value})}
                       />
                     </CInputGroup>
-                    <CRow>
-                      <CCol xs={6}>
-                        <CButton color="primary" className="px-4" type='submit'>
+                    <CRow className='text-center'>
+                      <CCol xs={12}>
+                        <CButton color="primary" className="px-4 w-100" type='submit'>
                           Login
                         </CButton>
                       </CCol>
-                      <CCol xs={6} className="text-right">
-                        <CButton color="link" className="px-0" >
+                      <CCol xs={12} className='mt-2'>
+                        <Link to="/register">
+                          <CButton color="white" className='w-100 border'>
+                            Register
+                          </CButton>
+                        </Link>
+                      </CCol>
+                      <CCol xs={12} className='mt-3'>
+                        <CButton color="link" className="p-0" onClick={()=>setIsOpenModal(true)}>
                           Forgot password?
                         </CButton>
                       </CCol>
@@ -80,26 +105,35 @@ const Login = () => {
                   </CForm>
                 </CCardBody>
               </CCard>
-              {/* <CCard className="text-white bg-primary py-5" style={{ width: '44%' }}>
-                <CCardBody className="text-center">
-                  <div>
-                    <h2>Sign up</h2>
-                    <p>
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-                      tempor incididunt ut labore et dolore magna aliqua.
-                    </p>
-                    <Link to="/register">
-                      <CButton color="primary" className="mt-3" active tabIndex={-1}>
-                        Register Now!
-                      </CButton>
-                    </Link>
-                  </div>
-                </CCardBody>
-              </CCard> */}
             </CCardGroup>
+            <div className='text-center mt-2'>
+              <Link to="/" color="white" className="px-0 color-link text-decoration-none">
+                <CIcon icon={cilHome} /> Home page
+              </Link>              
+            </div>
           </CCol>
-        </CRow>
+        </div>
       </CContainer>
+
+      <CModal visible={isOpenModal} onClose={() => setIsOpenModal(false)} alignment="center">
+        <CModalHeader>
+          <CModalTitle>Reset Password</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <CRow>
+            <p className="text-body-secondary">Please, inform the email to receive a reset link</p>
+            <CCol md={12}>
+              <CFormInput placeholder="email" autoComplete="email" 
+              onChange={(e)=>setResetEmail(e.target.value)}/>
+            </CCol>
+            <div className="d-grid mt-3">
+              <CButton color="primary" className="px-4 w-100" onClick={forgotPassword}>
+                Reset
+              </CButton>
+            </div>
+          </CRow>
+        </CModalBody>
+      </CModal>
     </div>
   )
 }
