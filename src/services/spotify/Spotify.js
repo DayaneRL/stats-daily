@@ -1,6 +1,8 @@
 import { createSearchParams } from "../../utility/Utils";
 
+const PARTNER_URL = import.meta.env.VITE_SPOTIFY_PARTNER_URL;
 const URL = import.meta.env.VITE_SPOTIFY_URL;
+// const ACCESS_TOKEN = import.meta.env.VITE_SPOTIFY_ACCESS_TOKEN;
 
 export default class Spotify {
 
@@ -26,17 +28,85 @@ export default class Spotify {
                 })
             });
             
-            let response = await fetch(`${URL}?${query}`,
+            let response = await fetch(`${PARTNER_URL}?${query}`,
                 {
                     headers: {
-                        authorization: `Bearer ${import.meta.env.VITE_SPOTIFY_KEY}`,
-                        // 'client-token': import.meta.env.VITE_SPOTIFY_TOKEN,
+                        authorization: `Bearer ${import.meta.env.VITE_SPOTIFY_ACCESS_TOKEN}`,
                     }
                 }
             );
             const data = await response.json()
 
             return data
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async search(term, tryAgain=true) {
+        try {
+            let access_token = localStorage.getItem('access_token');
+            
+            console.log('search', term, access_token)
+            let query = createSearchParams({
+                q: term,
+                type: 'track',
+                limit: 12,
+            });
+            
+            let response = await fetch(`${URL}/v1/search?${query}`,
+                {
+                    headers: {
+                        authorization: `Bearer ${access_token}`,
+                    }
+                }
+            );
+
+            console.log(response);
+
+            if(response.status==401 && tryAgain){
+                let refresh = await this.refresh_token();
+
+                if(refresh.status==200){
+                    setTimeout(()=>{
+                        this.search(term, false);
+                    },[1500]);
+                }
+            }else{
+                const data = await response?.json()
+        
+                return data;
+            }
+
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async refresh_token() {
+        try{
+            // const refreshToken = localStorage.getItem('refresh_token');
+
+            let response = await fetch('https://accounts.spotify.com/api/token',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': `Basic ${import.meta.env.VITE_SPOTIFY_BASE64}`
+                },
+                body: new URLSearchParams({
+                    grant_type: 'refresh_token',
+                    refresh_token: import.meta.env.VITE_SPOTIFY_REFRESH_TOKEN,
+                    client_id: import.meta.env.VITE_SPOTIFY_CLIENT_ID
+                }),
+            });
+            let data = await response?.json();
+
+            localStorage.setItem('access_token', data.access_token);
+            if (data.refresh_token) {
+              localStorage.setItem('refresh_token', data.refresh_token);
+            }
+
+            return {...data, status: response.status};
         } catch (error) {
             throw error;
         }

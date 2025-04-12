@@ -65,3 +65,18 @@ body {
     --cui-footer-bg: var(--cui-body-bg);
   }
 }
+
+.card-img {
+  min-width: 100px;
+  min-height: 100px;
+  object-fit: cover;
+}
+
+.text-card-title {
+  white-space: pre-wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; 
+}

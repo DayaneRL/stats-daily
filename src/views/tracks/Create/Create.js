@@ -4,10 +4,12 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import imageDefault from "../../../assets/images/banner.png";
 import Spotify from "../../../services/spotify/Spotify";
+import Youtube from "../../../services/youtube/Youtube";
 
 const CreateTracks = () => {
-    const [searchField, setSearchField] = useState('');
+    const [source, setSource] = useState('');
     const [valid, setValid] = useState({source:true, search:true});
+    const [searchField, setSearchField] = useState('');
     const [searchActive, setSearchActive] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
@@ -26,50 +28,89 @@ const CreateTracks = () => {
     }
 
     const activateSearch = async ()=>{
-        if(searchField.length){
-            setSearchActive(true);
-            setLoading(true);
+        if(source.length){
+            setValid({...valid, source:true});
 
-            //check the source first
-            await Spotify.searchTracks(searchField)
-            .then((data)=>{
-                
-                let tracksList = [];
-                
-                data.data.searchV2.tracksV2.items?.map((track)=>{
-                    let data = track.item.data;
-                    let album = track.item.data.albumOfTrack;
+            if(searchField.length){
+                setSearchActive(true);
+                setLoading(true);
 
-                    if(track.item.data.playability.playable){
-                        tracksList.push({
-                            cover: album.coverArt.sources[0],
-                            album: {
-                                id: album.id,
-                                name: album.name,
-                                uri: album.uri,
-                            },
-                            artists: data.artists.items,
-                            id: data.id,
-                            name: data.name,
-                            uri: data.uri
+
+                if(source=='1'){
+                    await Youtube.search(searchField)
+                    .then((data)=>{
+                        console.log(data);
+
+                        let tracksList = [];
+                        data.items?.map((item)=>{
+                            tracksList.push({
+                                cover: item.snippet.thumbnails?.medium,
+                                album: {},
+                                artists: [{
+                                    id: item.snippet.channelId,
+                                    profile: {name: item.snippet.channelTitle},
+                                }],
+                                id: item.id,
+                                name: item.snippet.title,
+                                uri: ""
+                            });
+                        });
+                        console.log('tracksList',tracksList);
+                        setTracks(tracksList);
+                    })
+                    .catch((error)=>{
+                        toast.error('An error occurred');
+                        setError(true);
+                    })
+                    .finally(()=>setLoading(false));
+                }
+
+                if(source=='2'){
+                    // return;
+                    await Spotify.search(searchField)
+                    .then((data)=>{
+                        console.log('data',data);
+                        let tracksList = [];
+                        return; //fix return to trackList
+                        
+                        data.data.searchV2.tracksV2.items?.map((track)=>{
+                            let data = track.item.data;
+                            let album = track.item.data.albumOfTrack;
+
+                            if(track.item.data.playability.playable){
+                                tracksList.push({
+                                    cover: album.coverArt.sources[0],
+                                    album: {
+                                        id: album.id,
+                                        name: album.name,
+                                        uri: album.uri,
+                                    },
+                                    artists: data.artists.items,
+                                    id: data.id,
+                                    name: data.name,
+                                    uri: data.uri
+                                })
+                            }
+
                         })
-                    }
+                        console.log('tracksList',tracksList);
+                        setTracks(tracksList);
+                    })
+                    .catch((error)=>{
+                        toast.error('An error occurred');
+                        setError(true);
+                    })
+                    .finally(()=>setLoading(false));
 
-                })
-                console.log('tracksList',tracksList);
-                setTracks(tracksList);
-            })
-            .catch((error)=>{
-                toast.error('An error occurred');
-                setError(true);
-            })
-            .finally(()=>setLoading(false));
-
-
+                }
+            }else{
+                toast.warning('Inform the track name');
+                setValid({...valid, search:false})
+            }   
         }else{
-            toast.warning('Inform the track name');
-            setValid({...valid, search:false})
-        }
+            toast.warning('Inform the source');
+            setValid({...valid, source:false})
+        }   
     }
 
     const RenderTrackCard = ({track}) => {
@@ -81,7 +122,7 @@ const CreateTracks = () => {
                     </CCol>
                     <CCol md={8}>
                         <CCardBody className="ps-0">
-                            <CCardTitle className="text-truncate">{track?.name}</CCardTitle>
+                            <h5 className="text-truncate text-card-title">{track?.name}</h5>
                             <CCardText className="text-truncate">
                                 {track?.artists?.map((a)=>a.profile.name)?.join(', ')}
                             </CCardText>
@@ -101,11 +142,13 @@ const CreateTracks = () => {
                         <CCol md={12}>
                             <CFormLabel>Source</CFormLabel>
                             <CFormSelect
+                                invalid={!valid.source}
                                 options={[
                                     { label: 'Select the source...' },
                                     { label: 'Youtube', value: '1' },
                                     { label: 'Spotify', value: '2' },
                                 ]}
+                                onChange={(e)=>setSource(e.target.value)}
                             />
                         </CCol>
                         <CCol md={12} className="mt-3">
@@ -135,22 +178,23 @@ const CreateTracks = () => {
                             <CSpinner />
                         </div>
                     ):(
-                        <CCard className="mt-3">
+                        <CCard className="my-3">
                             <CCardBody>
                                 <div className="text-center mb-3">
                                     <h4>Results</h4>
                                 </div>
-                                <CRow>
-                                    {tracks?.map((track)=>(
-                                        <CCol md={3}>
-                                            <RenderTrackCard track={track}/>
-                                        </CCol>
-                                    ))}
-                                </CRow>
-                                {error && (
+                                {error ? (
                                     <CAlert color='danger'>
-                                        An error occurred
+                                        Coult not fetch data
                                     </CAlert>
+                                ) :(
+                                    <CRow>
+                                        {tracks?.map((track)=>(
+                                            <CCol md={4}>
+                                                <RenderTrackCard track={track}/>
+                                            </CCol>
+                                        ))}
+                                    </CRow>
                                 )}
                             </CCardBody>
                         </CCard>
