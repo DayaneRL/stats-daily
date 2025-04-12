@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useContext, useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import {
   CCloseButton,
+  CNavItem,
+  CNavTitle,
   CSidebar,
   CSidebarBrand,
   CSidebarFooter,
@@ -19,11 +21,35 @@ import { sygnet } from 'src/assets/brand/sygnet'
 
 // sidebar nav config
 import navigation from '../_nav'
+import { AuthContext } from '../contexts/auth'
+import { cilSettings } from '@coreui/icons'
 
 const AppSidebar = () => {
   const dispatch = useDispatch()
   const unfoldable = useSelector((state) => state.sidebarUnfoldable)
   const sidebarShow = useSelector((state) => state.sidebarShow)
+  const [items, setItems] = useState(navigation);
+
+  const {signed} = useContext(AuthContext);
+  
+  const _auth =  [
+    {
+      component: CNavTitle,
+      name: 'Admin',
+    },
+    {
+      component: CNavItem,
+      name: 'Admin',
+      to: '/admin',
+      icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+    },
+  ];
+
+  useEffect(()=>{
+    if(signed){
+      setItems([...navigation, ..._auth]);
+    }
+  },[signed]);
 
   return (
     <CSidebar
@@ -48,7 +74,7 @@ const AppSidebar = () => {
           onClick={() => dispatch({ type: 'set', sidebarShow: false })}
         />
       </CSidebarHeader>
-      <AppSidebarNav items={navigation} />
+      <AppSidebarNav items={items} />
       <CSidebarFooter className="border-top d-none d-lg-flex">
         <CSidebarToggler
           onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable })}

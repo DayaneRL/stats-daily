@@ -3,11 +3,11 @@ import CIcon from '@coreui/icons-react'
 import {
   cilHome,
   cilMusicNote,
+  cilSettings,
   cilVoiceOverRecord,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
-//fazer navbar e componentes pras rotas
 const _nav = [
   {
     component: CNavItem,
@@ -57,7 +57,7 @@ const _nav = [
         to: '/artists/list',
       },
     ],
-  },
+  }
 ]
 
 export default _nav

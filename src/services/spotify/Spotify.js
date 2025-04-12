@@ -1,4 +1,4 @@
-import { createSearchParams } from "../../utility/Utils";
+import { createSearchParams, getStoragedData } from "../../utility/Utils";
 
 const PARTNER_URL = import.meta.env.VITE_SPOTIFY_PARTNER_URL;
 const URL = import.meta.env.VITE_SPOTIFY_URL;
@@ -43,21 +43,23 @@ export default class Spotify {
         }
     }
 
-    static async search(term, tryAgain=true) {
+    static async search(term, filters=null, tryAgain=true) {
         try {
-            let access_token = localStorage.getItem('access_token');
+            let data_storage = getStoragedData('stats_spotify');
             
-            console.log('search', term, access_token)
+            console.log('search', term, filters, data_storage.access_token)
+            // return;
             let query = createSearchParams({
                 q: term,
                 type: 'track',
                 limit: 12,
+                ...filters
             });
             
             let response = await fetch(`${URL}/v1/search?${query}`,
                 {
                     headers: {
-                        authorization: `Bearer ${access_token}`,
+                        authorization: `Bearer ${data_storage.access_token}`,
                     }
                 }
             );
@@ -69,7 +71,7 @@ export default class Spotify {
 
                 if(refresh.status==200){
                     setTimeout(()=>{
-                        this.search(term, false);
+                        this.search(term, filters, false);
                     },[1500]);
                 }
             }else{
@@ -85,7 +87,7 @@ export default class Spotify {
 
     static async refresh_token() {
         try{
-            // const refreshToken = localStorage.getItem('refresh_token');
+            const data_storage = getStoragedData('stats_spotify');
 
             let response = await fetch('https://accounts.spotify.com/api/token',{
                 method: 'POST',
@@ -95,15 +97,17 @@ export default class Spotify {
                 },
                 body: new URLSearchParams({
                     grant_type: 'refresh_token',
-                    refresh_token: import.meta.env.VITE_SPOTIFY_REFRESH_TOKEN,
+                    refresh_token: data_storage?.refresh_token,
                     client_id: import.meta.env.VITE_SPOTIFY_CLIENT_ID
                 }),
             });
             let data = await response?.json();
 
-            localStorage.setItem('access_token', data.access_token);
-            if (data.refresh_token) {
-              localStorage.setItem('refresh_token', data.refresh_token);
+            if(response.status==200){
+                localStorage.setItem('stats_spotify', JSON.stringify({
+                    access_token: data.access_token,
+                    refresh_token: data?.refresh_token ?? data_storage?.refresh_token
+                }));
             }
 
             return {...data, status: response.status};

@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import {Route, Navigate, Outlet} from 'react-router-dom';
 import {AuthContext} from '../contexts/auth';
 
-export const PrivateRoute = ({children}) => {
+export const PrivateRoute = () => {
     
     const {signed, loading} = useContext(AuthContext);
 
@@ -11,6 +11,6 @@ export const PrivateRoute = ({children}) => {
             <div></div>
         )
     }
-
-    return signed ? children : <Navigate to="/" />;
+    
+    return signed ? <Outlet /> : <Navigate to="/" />;
 }

@@ -7,7 +7,7 @@ const Artists = React.lazy(() => import('./views/artists/Artists.js'))
 const CreateArtists = React.lazy(() => import('./views/artists/Create.js'))
 const Profile = React.lazy(() => import('./views/pages/profile/Profile'))
 const Settings = React.lazy(() => import('./views/pages/settings/Settings'))
-
+const Admin = React.lazy(() => import('./views/admin/Admin'))
 
 const routes = [
   { path: '/', exact: true, name: 'Home' },
@@ -18,7 +18,7 @@ const routes = [
   { path: '/artists/create', name: 'Create Artist', element: CreateArtists },
   { path: '/profile', name: 'Profile', element: Profile },
   { path: '/settings', name: 'Settings', element: Settings },
-
+  { path: '/admin', name: 'Admin', element: Admin },
 ]
 
 export default routes

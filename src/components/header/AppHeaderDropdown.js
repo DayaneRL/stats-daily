@@ -42,7 +42,7 @@ const AppHeaderDropdown = () => {
       <CDropdownMenu className="pt-0" placement="bottom-end">
         {signed ? (
           <>
-            <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Settings</CDropdownHeader>
+            <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
             <CDropdownItem href="#/profile">
               <CIcon icon={cilUser} className="me-2" />
               Profile
@@ -59,7 +59,7 @@ const AppHeaderDropdown = () => {
           </>
         ):(
           <>
-            <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
+            {/* <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader> */}
             <CDropdownItem href="#/login">
               <CIcon icon={cilUser} className="me-2" />
               Login

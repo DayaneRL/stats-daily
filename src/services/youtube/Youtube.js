@@ -5,7 +5,7 @@ const KEY = import.meta.env.VITE_google_key;
 
 export default class Youtube {
 
-    static async search(searchTerm) {
+    static async search(searchTerm, filters=null) {
         try {
             let query = createSearchParams({
                 part: 'snippet',
@@ -15,7 +15,8 @@ export default class Youtube {
                 order: 'relevance',
                 regionCode: 'US',
                 videoCategoryId: '10',
-                key: KEY
+                key: KEY,
+                ...filters
             });
 
             let response = await fetch(`${URL}/v3/search?${query}`);

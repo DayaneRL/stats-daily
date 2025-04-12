@@ -1,10 +1,11 @@
-import { CAlert, CButton, CCard, CCardBody, CCardHeader, CCardImage, CCardText, CCardTitle, CCol, CFormInput, CFormLabel, CFormSelect, CRow, CSpinner } from "@coreui/react";
+import { CAlert, CButton, CCard, CCardBody, CCardHeader, CCardImage, CCardText, CCardTitle, CCol, CFormInput, CFormLabel, CFormSelect, CRow, CSpinner, CTooltip } from "@coreui/react";
 import { debounce } from "lodash";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import imageDefault from "../../../assets/images/banner.png";
 import Spotify from "../../../services/spotify/Spotify";
 import Youtube from "../../../services/youtube/Youtube";
+import { fixTextUtf8 } from "../../../utility/Utils";
 
 const CreateTracks = () => {
     const [source, setSource] = useState('');
@@ -14,6 +15,8 @@ const CreateTracks = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
     const [tracks, setTracks] = useState([]);
+
+    const [paginate, setPaginate] = useState({next: '', previous: '', offset: 0});
 
     // const search = useCallback(
     //     debounce((e) => {
@@ -27,7 +30,7 @@ const CreateTracks = () => {
         setValid({...valid, search: true})
     }
 
-    const activateSearch = async ()=>{
+    const activateSearch = async (filters)=>{
         if(source.length){
             setValid({...valid, source:true});
 
@@ -35,28 +38,35 @@ const CreateTracks = () => {
                 setSearchActive(true);
                 setLoading(true);
 
-
                 if(source=='1'){
-                    await Youtube.search(searchField)
+                    await Youtube.search(searchField, filters)
                     .then((data)=>{
-                        console.log(data);
-
+                        console.log('data',data);
                         let tracksList = [];
                         data.items?.map((item)=>{
-                            tracksList.push({
-                                cover: item.snippet.thumbnails?.medium,
-                                album: {},
-                                artists: [{
-                                    id: item.snippet.channelId,
-                                    profile: {name: item.snippet.channelTitle},
-                                }],
-                                id: item.id,
-                                name: item.snippet.title,
-                                uri: ""
-                            });
+                            if(item.id?.kind=="youtube#video"){
+                                let name = fixTextUtf8(item.snippet.title);
+                                
+                                tracksList.push({
+                                    cover: item.snippet.thumbnails?.medium,
+                                    artists: [{
+                                        id: item.snippet.channelId,
+                                        name: item.snippet.channelTitle,
+                                    }],
+                                    id: item.id,
+                                    name: name,
+                                    uri: ""
+                                });
+                            }
                         });
                         console.log('tracksList',tracksList);
                         setTracks(tracksList);
+
+                        setPaginate({
+                            ...paginate,
+                            next: data?.nextPageToken, 
+                            previous: data?.prevPageToken
+                        })
                     })
                     .catch((error)=>{
                         toast.error('An error occurred');
@@ -66,35 +76,32 @@ const CreateTracks = () => {
                 }
 
                 if(source=='2'){
-                    // return;
-                    await Spotify.search(searchField)
+                    await Spotify.search(searchField, filters)
                     .then((data)=>{
                         console.log('data',data);
                         let tracksList = [];
-                        return; //fix return to trackList
                         
-                        data.data.searchV2.tracksV2.items?.map((track)=>{
-                            let data = track.item.data;
-                            let album = track.item.data.albumOfTrack;
-
-                            if(track.item.data.playability.playable){
+                        data?.tracks?.items?.map((track)=>{
+                            if(track.is_playable){
                                 tracksList.push({
-                                    cover: album.coverArt.sources[0],
-                                    album: {
-                                        id: album.id,
-                                        name: album.name,
-                                        uri: album.uri,
-                                    },
-                                    artists: data.artists.items,
-                                    id: data.id,
-                                    name: data.name,
-                                    uri: data.uri
+                                    cover: track.album.images[0],
+                                    artists: track.artists,
+                                    id: track.id,
+                                    name: track.name,
+                                    uri: track.uri
                                 })
                             }
 
                         })
                         console.log('tracksList',tracksList);
                         setTracks(tracksList);
+                        
+                        let offset = filters?.offset >=0 ? filters?.offset: 0;//filters offset based on limit
+                        setPaginate({
+                            offset: offset,
+                            next: offset+12,
+                            previous:offset-12
+                        });
                     })
                     .catch((error)=>{
                         toast.error('An error occurred');
@@ -115,21 +122,56 @@ const CreateTracks = () => {
 
     const RenderTrackCard = ({track}) => {
         return (
-            <CCard className="mb-3">
-                <CRow className="g-0">
-                    <CCol md={4} className="p-3">
-                        <CCardImage src={track?.cover?.url ?? imageDefault} />
+            <CTooltip content={track?.name}>
+                <CCard className="mb-3 card-track">
+                    <CRow className="g-0">
+                        <CCol md={4} className="p-3">
+                            <CCardImage src={track?.cover?.url ?? imageDefault} />
+                        </CCol>
+                        <CCol md={8}>
+                            <CCardBody className="ps-0">
+                                <h5 className="text-truncate text-card-title">{track?.name}</h5>
+                                <CCardText className="text-truncate">
+                                    {track?.artists?.map((a)=>a.name)?.join(', ')}
+                                </CCardText>
+                            </CCardBody>
+                        </CCol>
+                    </CRow>
+                </CCard>
+            </CTooltip>
+        )
+    }
+
+    const RenderPaginateButtons = () => {
+        return(
+            <>
+                {source=='1'?
+                (
+                    <CCol md={12} className="d-flex justify-content-between">
+                        <CButton
+                            disabled={!paginate.previous}
+                            color="white border" 
+                            variant='outline' 
+                            onClick={()=>activateSearch({pageToken: paginate.previous})}
+                            >Previous</CButton>
+                        <CButton 
+                            color="primary" 
+                            variant='outline'
+                            onClick={()=>activateSearch({pageToken: paginate.next})}
+                            >Next</CButton>
                     </CCol>
-                    <CCol md={8}>
-                        <CCardBody className="ps-0">
-                            <h5 className="text-truncate text-card-title">{track?.name}</h5>
-                            <CCardText className="text-truncate">
-                                {track?.artists?.map((a)=>a.profile.name)?.join(', ')}
-                            </CCardText>
-                        </CCardBody>
+                ):(
+                    <CCol md={12} className="d-flex justify-content-between">
+                        <CButton color="white border" variant='outline' 
+                            disabled={paginate.offset==0}
+                            onClick={()=>activateSearch({offset: paginate.previous})}
+                            >Previous</CButton>
+                        <CButton color="primary" variant='outline'
+                            onClick={()=>activateSearch({offset: paginate.next})}
+                            >Next</CButton>
                     </CCol>
-                </CRow>
-            </CCard>
+                )}
+            </>
         )
     }
   
@@ -152,19 +194,19 @@ const CreateTracks = () => {
                             />
                         </CCol>
                         <CCol md={12} className="mt-3">
-                            <CFormLabel>Search track</CFormLabel>
+                            <CFormLabel>Track name</CFormLabel>
                             <CRow>
                                 <CCol md={10}>
                                     <CFormInput
                                         name='search'
-                                        placeholder="Track name"
+                                        placeholder="Search name..."
                                         onChange={(e)=>handleSearchField(e)} 
                                         invalid={!valid.search}
                                         feedback="Please provide a valid track name."
                                     />
                                 </CCol>
                                 <CCol md={2}>
-                                    <CButton color="primary w-100" onClick={activateSearch}>Search</CButton>
+                                    <CButton color="primary w-100" onClick={()=>activateSearch()}>Search</CButton>
                                 </CCol>
                             </CRow>
                         </CCol>
@@ -190,10 +232,11 @@ const CreateTracks = () => {
                                 ) :(
                                     <CRow>
                                         {tracks?.map((track)=>(
-                                            <CCol md={4}>
+                                            <CCol md={4} key={track.id}>
                                                 <RenderTrackCard track={track}/>
                                             </CCol>
                                         ))}
+                                        <RenderPaginateButtons />
                                     </CRow>
                                 )}
                             </CCardBody>
