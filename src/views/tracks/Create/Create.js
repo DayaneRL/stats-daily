@@ -1,4 +1,4 @@
-import { CAlert, CButton, CCard, CCardBody, CCardHeader, CCardImage, CCardText, CCardTitle, CCol, CFormInput, CFormLabel, CFormSelect, CRow, CSpinner, CTooltip } from "@coreui/react";
+import { CAlert, CBadge, CButton, CCard, CCardBody, CCardHeader, CCardImage, CCardText, CCardTitle, CCol, CFormInput, CFormLabel, CFormSelect, CModal, CModalBody, CModalHeader, CModalTitle, CRow, CSpinner, CTooltip } from "@coreui/react";
 import { debounce } from "lodash";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +8,12 @@ import Youtube from "../../../services/youtube/Youtube";
 import { fixTextUtf8 } from "../../../utility/Utils";
 
 const CreateTracks = () => {
+    const sourceOptions = [
+        { label: 'Select the source...' },
+        { label: 'Youtube', value: '1' },
+        { label: 'Spotify', value: '2' },
+    ];
+
     const [source, setSource] = useState('');
     const [valid, setValid] = useState({source:true, search:true});
     const [searchField, setSearchField] = useState('');
@@ -15,8 +21,10 @@ const CreateTracks = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(false);
     const [tracks, setTracks] = useState([]);
-
     const [paginate, setPaginate] = useState({next: '', previous: '', offset: 0});
+    const [trackSelected, setTrackSelected] = useState({});
+
+    const [modalIsOpen, setModalIsOpen] = useState(false);
 
     // const search = useCallback(
     //     debounce((e) => {
@@ -48,14 +56,17 @@ const CreateTracks = () => {
                                 let name = fixTextUtf8(item.snippet.title);
                                 
                                 tracksList.push({
-                                    cover: item.snippet.thumbnails?.medium,
+                                    thumb: [
+                                        item.snippet.thumbnails?.high,
+                                        item.snippet.thumbnails?.medium,
+                                    ],
                                     artists: [{
                                         id: item.snippet.channelId,
                                         name: item.snippet.channelTitle,
                                     }],
                                     id: item.id,
                                     name: name,
-                                    uri: ""
+                                    etag: item.etag
                                 });
                             }
                         });
@@ -77,14 +88,26 @@ const CreateTracks = () => {
 
                 if(source=='2'){
                     await Spotify.search(searchField, filters)
-                    .then((data)=>{
+                    .then(async (data) => {
+
+                        //unauthorized 
+                        if(data.status==401){
+                            let refresh = await Spotify.refresh_token();
+            
+                            if(refresh.status==200){
+                                setTimeout(()=>{
+                                    activateSearch(filters)
+                                },[1500]);
+                            }
+                        }
+
                         console.log('data',data);
                         let tracksList = [];
                         
                         data?.tracks?.items?.map((track)=>{
                             if(track.is_playable){
                                 tracksList.push({
-                                    cover: track.album.images[0],
+                                    thumb: track.album.images,
                                     artists: track.artists,
                                     id: track.id,
                                     name: track.name,
@@ -123,10 +146,10 @@ const CreateTracks = () => {
     const RenderTrackCard = ({track}) => {
         return (
             <CTooltip content={track?.name}>
-                <CCard className="mb-3 card-track">
+                <CCard className="mb-3 card-track" onClick={()=>handleSelectCard(track)}>
                     <CRow className="g-0">
                         <CCol md={4} className="p-3">
-                            <CCardImage src={track?.cover?.url ?? imageDefault} />
+                            <CCardImage src={track?.thumb[1]?.url ?? imageDefault} />
                         </CCol>
                         <CCol md={8}>
                             <CCardBody className="ps-0">
@@ -174,6 +197,33 @@ const CreateTracks = () => {
             </>
         )
     }
+
+    const handleSelectCard = async (track) => {
+        setModalIsOpen(true);
+        setTrackSelected(track);
+        console.log('track', track);
+        // return;
+    }
+    
+    const confirmTrack = async () => {
+        let track = trackSelected;
+
+        if(source=='1'){
+            await Youtube.getVideo(track.id?.videoId)
+            .then(async (res)=>{
+                console.log('get video success', res);
+                
+                await Youtube.PostTrack(track);
+                await Youtube.PostTrackViews(track, res?.items[0]?.statistics);
+                
+                toast.success('Created successfully');
+            })
+            .catch((error)=>{
+                toast.error('An error occurred');
+            })
+            .finally(()=>setModalIsOpen(false));
+        }
+    } 
   
     return (
         <div>
@@ -185,11 +235,7 @@ const CreateTracks = () => {
                             <CFormLabel>Source</CFormLabel>
                             <CFormSelect
                                 invalid={!valid.source}
-                                options={[
-                                    { label: 'Select the source...' },
-                                    { label: 'Youtube', value: '1' },
-                                    { label: 'Spotify', value: '2' },
-                                ]}
+                                options={sourceOptions}
                                 onChange={(e)=>setSource(e.target.value)}
                             />
                         </CCol>
@@ -244,6 +290,38 @@ const CreateTracks = () => {
                     )}
                 </div>
             )}
+
+            <CModal visible={modalIsOpen} onClose={()=>setModalIsOpen(false)} alignment="center">
+                <CModalHeader>
+                    <CModalTitle>Confirm track</CModalTitle>
+                </CModalHeader>
+                <CModalBody>
+                    <CRow>
+                        {/* <p className="text-body-secondary">Confirm the track creation data</p> */}
+                        <p>
+                            <b>Source: </b> <CBadge color={source=='1'?"danger":"success"}>{sourceOptions?.find((s)=>s.value==source)?.label}</CBadge>
+                        </p>
+                        <p>
+                            <b>Name: </b> {trackSelected?.name}
+                        </p>
+                        <p>
+                            <b>{source=='1'?'Channel':'Artist'}: </b> {trackSelected?.artists?.map((a)=>a.name)?.join(', ')}
+                        </p>
+                        {trackSelected?.thumb?.[0]?.url && (
+                            <CCol md={12}>
+                                <CCard>
+                                    <CCardImage src={trackSelected.thumb[0]?.url ?? imageDefault} />
+                                </CCard>
+                            </CCol>
+                        )}
+                        <div className="d-grid mt-3">
+                            <CButton color="primary" className="px-4 w-100" onClick={()=>confirmTrack()}>
+                                Confirm
+                            </CButton>
+                        </div>
+                    </CRow>
+                </CModalBody>
+            </CModal>
         </div>
     )
   }

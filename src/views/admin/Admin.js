@@ -2,6 +2,7 @@ import { CButton, CCard, CCardBody, CCardHeader, CCardText, CCol, CFormInput, CF
 import DefaultProtectedLayout from "../../components/DefaultProtectedLayout";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getStoragedData } from "../../utility/Utils";
 
 const Admin = () => {
     const [data, setData] = useState({access_token: '', refresh_token:''});
@@ -12,8 +13,9 @@ const Admin = () => {
     }
 
     useEffect(()=>{
-        let data = localStorage.getItem('stats_spt');
+        let data = getStoragedData('stats_spotify');
         if(data?.access_token){
+            console.log(data)
             setData(data);
         }
     },[]);
@@ -33,6 +35,7 @@ const Admin = () => {
                                 <CFormLabel>Access Token</CFormLabel>
                                 <CFormInput
                                     placeholder="Access Token"
+                                    defaultValue={data?.access_token}
                                     onChange={(e)=>setData({...data, access_token: e.target.value})} 
                                 />
                             </CCol>
@@ -42,6 +45,7 @@ const Admin = () => {
                                     <CCol md={12}>
                                         <CFormInput
                                             placeholder="Refresh Token"
+                                            defaultValue={data?.refresh_token}
                                             onChange={(e)=>setData({...data, refresh_token: e.target.value})} 
                                         />
                                     </CCol>

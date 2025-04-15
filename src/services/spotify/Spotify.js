@@ -48,7 +48,7 @@ export default class Spotify {
             let data_storage = getStoragedData('stats_spotify');
             
             console.log('search', term, filters, data_storage.access_token)
-            // return;
+
             let query = createSearchParams({
                 q: term,
                 type: 'track',
@@ -64,21 +64,12 @@ export default class Spotify {
                 }
             );
 
-            console.log(response);
-
-            if(response.status==401 && tryAgain){
-                let refresh = await this.refresh_token();
-
-                if(refresh.status==200){
-                    setTimeout(()=>{
-                        this.search(term, filters, false);
-                    },[1500]);
-                }
-            }else{
+            if(response.status==200){
                 const data = await response?.json()
-        
                 return data;
             }
+
+            return response;
 
         } catch (error) {
             throw error;
