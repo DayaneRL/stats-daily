@@ -1,8 +1,11 @@
+import { doc, setDoc } from "firebase/firestore";
 import { createSearchParams, getStoragedData } from "../../utility/Utils";
+import db from "../connection";
 
 const PARTNER_URL = import.meta.env.VITE_SPOTIFY_PARTNER_URL;
 const URL = import.meta.env.VITE_SPOTIFY_URL;
 // const ACCESS_TOKEN = import.meta.env.VITE_SPOTIFY_ACCESS_TOKEN;
+const RAPIDAPI_KEY = import.meta.env.VITE_SPOTIFY_RAPIDAPI_KEY;
 
 export default class Spotify {
 
@@ -107,4 +110,56 @@ export default class Spotify {
         }
     }
 
+    static async getTrack(trackId) {
+        try {
+
+            let response = await fetch(`https://spotify-statistics-and-stream-count.p.rapidapi.com/track/${trackId}`,
+                {
+                    headers: {
+                        'x-rapidapi-host': 'spotify-statistics-and-stream-count.p.rapidapi.com',
+                        'x-rapidapi-key': RAPIDAPI_KEY
+                    }
+                }
+            );
+            
+            return response.json();
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async createTrack(track) {
+        try {
+            let now = new Date();
+            const docRef = await setDoc(doc(db, `tracks/${track?.id}`), {
+                ...track,
+                sourceType: 2,
+                createdAt: now?.toISOString()
+            });
+
+            return docRef;
+        } catch (error) {
+            throw error;
+        }
+    }
+    
+    static async createTrackViews(track) {
+        try {
+            let now = new Date();
+            const key = now.valueOf();
+
+            const docRef = await setDoc(doc(db, `track-views/${track?.id}`), {
+                [key]: {
+                    id: track.id,
+                    name: track.name,
+                    views: track.streamCount,
+                    createdAt: now?.toISOString()
+                }
+            });
+
+            return docRef;
+        } catch (error) {
+            throw error;
+        }
+    }
 }

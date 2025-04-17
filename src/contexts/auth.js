@@ -46,7 +46,7 @@ function AuthProvider({children}){
             toast.success(`Welcome ${userProfile?.displayName??''}!`);
         })
         .catch((error)=>{
-            console.log(error, error.code);
+            console.error(error);
             if(error.code=='auth/invalid-credential'){
                 toast.error('Email or password invalid');
             }else{
@@ -76,7 +76,7 @@ function AuthProvider({children}){
             // console.log("Document written with ID: ", docRef.id);
         })
         .catch((error)=>{
-            console.log(error);
+            console.error(error);
             toast.error('Something went wrong. Message: '+error.message);
             setLoadingAuth(false);
         })

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import imageDefault from "../../../assets/images/banner.png";
 import Spotify from "../../../services/spotify/Spotify";
 import Youtube from "../../../services/youtube/Youtube";
-import { fixTextUtf8 } from "../../../utility/Utils";
+import { fixTextUtf8, getStoragedData } from "../../../utility/Utils";
 
 const CreateTracks = () => {
     const sourceOptions = [
@@ -64,7 +64,7 @@ const CreateTracks = () => {
                                         id: item.snippet.channelId,
                                         name: item.snippet.channelTitle,
                                     }],
-                                    id: item.id,
+                                    id: item.id.videoId,
                                     name: name,
                                     etag: item.etag
                                 });
@@ -87,6 +87,15 @@ const CreateTracks = () => {
                 }
 
                 if(source=='2'){
+                    
+                    let data_storage = getStoragedData('stats_spotify');
+                    if(!data_storage){
+                        toast.error('Configure access token');
+                        setLoading(false);
+                        setSearchActive(false);
+                        return;
+                    }
+                    
                     await Spotify.search(searchField, filters)
                     .then(async (data) => {
 
@@ -209,13 +218,30 @@ const CreateTracks = () => {
         let track = trackSelected;
 
         if(source=='1'){
-            await Youtube.getVideo(track.id?.videoId)
+            await Youtube.getVideo(track.id)
             .then(async (res)=>{
-                console.log('get video success', res);
                 
                 await Youtube.PostTrack(track);
                 await Youtube.PostTrackViews(track, res?.items[0]?.statistics);
                 
+                toast.success('Created successfully');
+            })
+            .catch((error)=>{
+                toast.error('An error occurred');
+            })
+            .finally(()=>setModalIsOpen(false));
+        }
+
+        if(source=='2'){
+            await Spotify.getTrack(track.id)
+            .then(async (res)=>{
+
+                await Spotify.createTrack(track);
+                await Spotify.createTrackViews({
+                    ...track,
+                    streamCount: res.streamCount
+                });
+
                 toast.success('Created successfully');
             })
             .catch((error)=>{

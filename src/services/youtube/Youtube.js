@@ -50,7 +50,7 @@ export default class Youtube {
     static async PostTrack(track) {
         try {
             let now = new Date();
-            const docRef = await setDoc(doc(db, `tracks/${track?.id?.videoId}`), {
+            const docRef = await setDoc(doc(db, `tracks/${track?.id}`), {
                 ...track,
                 sourceType: 1,
                 createdAt: now?.toISOString()
@@ -65,12 +65,15 @@ export default class Youtube {
     static async PostTrackViews(track, statistics) {
         try {
             let now = new Date();
+            const key = now.valueOf();
 
-            const docRef = await setDoc(doc(db, `track-views/${track?.id?.videoId}`), {
-                id: track.id?.videoId,
-                name: track.name,
-                views: statistics.viewCount,
-                createdAt: now?.toISOString()
+            const docRef = await setDoc(doc(db, `track-views/${track?.id}`), {
+                [key]: {
+                    id: track.id,
+                    name: track.name,
+                    views: statistics.viewCount,
+                    createdAt: now?.toISOString()
+                }
             });
 
             return docRef;
